@@ -1,0 +1,7 @@
+GONNA WORK ON ./sample_images
+
+
+Starting ./sample_images/sub1
+    Done with ./sample_images/sub1
+Starting ./sample_images/sub2
+    Done with ./sample_images/sub2
