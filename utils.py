@@ -1,12 +1,14 @@
+import copy
 import json
-import numpy as np
 import os
 import pathlib
 import shutil
 import time
 
-from PIL import Image
 import cv2
+import numpy as np
+import torch
+from PIL import Image
 
 
 def make_256x256(path_to_image):
@@ -149,4 +151,29 @@ def find_average_pixels(path_to_folder, dimensions=(256, 256)):
             with open('output_average_pixels.txt', 'a') as file:
                 file.write("\t%s\n" % str(e))
 
+def extract_10_patches(inputs):
+    """
+    inputs will be in the form of a tensor containing a batch of images; ie a shape of (128, 3, 256, 256)
+
+    From Alexnet paper:
+    "At test time, the network makes a prediction by extracting five 224 × 224 patches 
+    (the four corner patches and the center patch) as well as their horizontal reflections 
+    (hence ten patches in all), and averaging the predictions made by the network’s softmax
+    layer on the ten patches."
+    """
+    _, _, r, c = inputs.shape
+    assert r == 256 and c == 256
+
+    return [
+        inputs[:,:,:224,:224],
+        inputs[:,:,:224,32:],
+        inputs[:,:,32:,:224],
+        inputs[:,:,32:,32:],
+        inputs[:,:,16:240,16:240],
+        torch.flip(inputs[:,:,:224,:224], [3]),
+        torch.flip(inputs[:,:,:224,32:], [3]),
+        torch.flip(inputs[:,:,32:,:224], [3]),
+        torch.flip(inputs[:,:,32:,32:], [3]),
+        torch.flip(inputs[:,:,16:240,16:240], [3])
+    ]
 

@@ -15,10 +15,12 @@ class mean_activity_transform(object):
 
         :return: mean-adjusted image
         """
-         # just work with the center 224x224 portion of the 256x256 average image... whoops
         average_img = (np.asarray(
             Image.open("./mean_activity.JPEG"), 
-            dtype=np.float64)/255)[16:240, 16:240]
+            dtype=np.float64)/255)
+        if img.shape[1] == 224:
+        # just work with the center 224x224 portion of the 256x256 average image... whoops
+            average_img = average_img[16:240, 16:240]
         
         return img - np.reshape(average_img, img.shape)
 
