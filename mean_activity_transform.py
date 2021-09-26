@@ -1,4 +1,4 @@
-import cv2
+import numpy as np
 from PIL import Image
 
 class mean_activity_transform(object):
@@ -11,12 +11,16 @@ class mean_activity_transform(object):
     
     def __call__(self, img):
         """
-        :param img: PIL): Image 
+        :param img: tensor image
 
         :return: mean-adjusted image
         """
+         # just work with the center 224x224 portion of the 256x256 average image... whoops
+        average_img = (np.asarray(
+            Image.open("./mean_activity.JPEG"), 
+            dtype=np.float64)/255)[16:240, 16:240]
         
-        return cv2.subtract(img, Image.open("./mean_activity.JPEG"))
+        return img - np.reshape(average_img, img.shape)
 
     def __repr__(self):
         return self.__class__.__name__+'()'

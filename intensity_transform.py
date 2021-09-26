@@ -1,4 +1,7 @@
+import copy
+
 import numpy as np
+import torch
 
 class intensity_transform(object):
     """
@@ -25,15 +28,14 @@ class intensity_transform(object):
     
     def __call__(self, img):
         """
-        :param img: PIL): Image 
+        :param img: tensor image
 
         :return: intensity-adjusted image
         """
-        # apparently faster to work with values 0-1
-        orig_img = img.astype(float).copy()/255.0
+        orig_img = np.asarray(copy.deepcopy(img))
 
         # flatten image to columns of RGB
-        img_rs = img.reshape(-1, 3)
+        img_rs = np.asarray(img.reshape(-1, 3))
 
         # center mean
         img_centered = img_rs - np.mean(img_rs, axis=0)
@@ -49,13 +51,12 @@ class intensity_transform(object):
         eig_vecs = eig_vecs[:, sort_perm]
 
         # [p1, p2, p3][α1λ1, α2λ2, α3λ3]T
-        quanitity_to_add = np.column_stack((eig_vecs)) * (np.random.normal(0, 0.1)* eig_vals[:])
+        quanitity_to_add = np.dot(eig_vecs, (np.random.normal(0, 0.1)* eig_vals[:]))
 
         for idx in range(3):   # RGB
             orig_img[..., idx] += quanitity_to_add[idx]
 
-        # get it back to 0-255
-        return np.clip(orig_img, 0.0, 255.0).astype(np.uint8)
+        return torch.from_numpy(orig_img)
 
     def __repr__(self):
         return self.__class__.__name__+'()'
