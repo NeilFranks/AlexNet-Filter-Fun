@@ -29,15 +29,16 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Top level data directory. Here we assume the format of the directory conforms
 #   to the ImageFolder structure
-data_dir = "D:/256_train_and_val"
-# data_dir = "D:/baby_256_train_and_val"
+# data_dir = "D:/256_train_and_val"
+data_dir = "D:/baby_256_train_and_val"
 MODEL_FOLDER = "./models/%s_model" % (data_dir.split("/")[-1])
 
 # images are 224x224
 input_size = 224
 
 # Number of classes in the dataset
-num_classes = 1000
+# num_classes = 1000
+num_classes = 2
 
 """
 From Alexnet paper:
@@ -263,28 +264,28 @@ if __name__ == "__main__":
     }
 
     # Initialize the model for this run
-    model_ft = initialize_model(num_classes, feature_extract, use_pretrained=False)
+    model = initialize_model(num_classes, feature_extract, use_pretrained=False)
 
-    # print(model_ft)
+    # print(model)
 
     # Send the model to GPU
-    model_ft = model_ft.to(device)
+    model = model.to(device)
 
     # Gather the parameters to be optimized/updated in this run. If we are
     #  finetuning we will be updating all parameters. However, if we are
     #  doing feature extract method, we will only update the parameters
     #  that we have just initialized, i.e. the parameters with requires_grad
     #  is True.
-    params_to_update = model_ft.parameters()
+    params_to_update = model.parameters()
     print("Params to learn:")
     if feature_extract:
         params_to_update = []
-        for name,param in model_ft.named_parameters():
+        for name,param in model.named_parameters():
             if param.requires_grad == True:
                 params_to_update.append(param)
                 print("\t",name)
     else:
-        for name,param in model_ft.named_parameters():
+        for name,param in model.named_parameters():
             if param.requires_grad == True:
                 print("\t",name)
 
@@ -300,12 +301,12 @@ if __name__ == "__main__":
     reduced three times prior to termination. "
     """
     # Observe that all parameters are being optimized
-    optimizer_ft = torch.optim.SGD(params_to_update, lr=0.01, momentum=0.9, weight_decay=0.0005)
-    scheduler_ft = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer_ft, mode="min", factor=0.1)
+    optimizer = torch.optim.SGD(params_to_update, lr=0.01, momentum=0.9, weight_decay=0.0005)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.1)
 
     # Setup the loss fxn
     criterion = torch.nn.CrossEntropyLoss()
 
     # Train and evaluate
-    model_ft, hist = train_model(model_ft, dataloaders, criterion, optimizer_ft, scheduler_ft, num_epochs=num_epochs)
+    model, hist = train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=num_epochs)
 
