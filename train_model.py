@@ -160,6 +160,7 @@ if __name__ == "__main__":
                 running_corrects = 0
 
                 # Iterate over data.
+                iterations = 0
                 for inputs, labels in dataloaders[phase]:
                     inputs = inputs.to(device, dtype=torch.float)
                     labels = labels.to(device, dtype=torch.float)
@@ -197,6 +198,10 @@ if __name__ == "__main__":
                     """
                     scheduler.step(running_val_loss)
 
+                    iterations += 1
+                    print("\tIterations: %s" % iterations, end='\r')
+
+                print()
                 epoch_loss = running_loss / len(dataloaders[phase].dataset)
                 epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)
 
@@ -206,15 +211,24 @@ if __name__ == "__main__":
                 if phase == 'val' and epoch_acc > best_acc:
                     best_acc = epoch_acc
                     best_model_wts = copy.deepcopy(model.state_dict())
+
+                    # save this special boy to a special spot
+                    torch.save({
+                        'epoch': epoch,
+                        'model_state_dict': model.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict(),
+                        'scheduler_state_dict': scheduler.state_dict()
+                        }, os.path.join(MODEL_FOLDER, "best.pt"))
                 if phase == 'val':
                     val_acc_history.append(epoch_acc)
 
+            # save after every epoch, since it takes so long to do an epoch and takes 1 second to save it...
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'scheduler_state_dict': scheduler.state_dict()
-                }, os.path.join(MODEL_FOLDER, epoch))
+                }, os.path.join(MODEL_FOLDER, "%s.pt" % epoch))
 
             print()
 
