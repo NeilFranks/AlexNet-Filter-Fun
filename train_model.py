@@ -8,12 +8,12 @@ from collections import Counter
 import numpy as np
 import torch
 import torchvision.datasets as datasets
-import torchvision.models as models
 import torchvision.transforms as transforms
 
 import intensity_transform
 import mean_activity_transform
 import utils
+from model import initialize_model
 
 
 """
@@ -23,15 +23,15 @@ With tips from https://pytorch.org/tutorials/beginner/finetuning_torchvision_mod
 """
 VARIOUS SETUP THINGS
 """
-MODEL_FOLDER = "./model_from_scratch"
 
 # Detect if we have a GPU available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Top level data directory. Here we assume the format of the directory conforms
 #   to the ImageFolder structure
-# data_dir = "D:/256_train_and_val"
-data_dir = "D:/baby_256_train_and_val"
+data_dir = "D:/256_train_and_val"
+# data_dir = "D:/baby_256_train_and_val"
+MODEL_FOLDER = "./models/%s_model" % (data_dir.split("/")[-1])
 
 # images are 224x224
 input_size = 224
@@ -46,7 +46,7 @@ with a batch size of 128 examples"
 """
 # Batch size for training (change depending on how much memory you have)
 batch_size = 128
-workers = 8
+workers = 7
 
 """
 From Alexnet paper:
@@ -58,23 +58,6 @@ num_epochs = 90
 # Flag for feature extracting. When False, we finetune the whole model,
 #   when True we only update the reshaped layer params
 feature_extract = False
-
-def set_parameter_requires_grad(model, feature_extracting):
-    if feature_extracting:
-        for param in model.parameters():
-            param.requires_grad = False
-
-def initialize_model(num_classes, feature_extract, use_pretrained=True):
-    # Initialize these variables which will be set in this if statement. Each of these
-    #   variables is model specific.
-    model_ft = None
-    
-    model_ft = models.alexnet(pretrained=use_pretrained)
-    set_parameter_requires_grad(model_ft, feature_extract)
-    num_ftrs = model_ft.classifier[6].in_features
-    model_ft.classifier[6] = torch.nn.Linear(num_ftrs,num_classes)
-
-    return model_ft
 
 def train_dataset(data_dir):
     train_dir = os.path.join(data_dir, 'train')
@@ -140,8 +123,14 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
 
     val_acc_history = []
 
-    best_model_wts = copy.deepcopy(model.state_dict())
-    best_acc = 0.0
+    # Load the best model checkpoint, if you have one
+    if os.path.isfile(os.path.join(MODEL_FOLDER, "best.pt")):
+        checkpoint = torch.load(os.path.join(MODEL_FOLDER, "best.pt"))
+        best_model_wts = checkpoint['model_state_dict']
+        best_acc = checkpoint['acc']
+    else:
+        best_model_wts = copy.deepcopy(model.state_dict())
+        best_acc = 0.0
 
     for epoch in range(num_epochs):
         print('Epoch {}/{} - {}'.format(epoch, num_epochs - 1, datetime.datetime.now()))
@@ -221,8 +210,6 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                 iterations += torch.tensor(1)
                 print("\tIterations: %s" % iterations, end='\r')
 
-
-
             print()
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)
@@ -239,7 +226,8 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
-                    'scheduler_state_dict': scheduler.state_dict()
+                    'scheduler_state_dict': scheduler.state_dict(),
+                    'acc': epoch_acc
                     }, os.path.join(MODEL_FOLDER, "best.pt"))
             if phase == 'val':
                 val_acc_history.append(epoch_acc)
@@ -249,7 +237,8 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
-            'scheduler_state_dict': scheduler.state_dict()
+            'scheduler_state_dict': scheduler.state_dict(),
+            'acc': epoch_acc
             }, os.path.join(MODEL_FOLDER, "%s.pt" % epoch))
 
         print()
