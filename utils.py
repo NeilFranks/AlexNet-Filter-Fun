@@ -1,9 +1,12 @@
 import json
+import numpy as np
 import os
 import pathlib
 import shutil
+import time
 
 from PIL import Image
+import cv2
 
 
 def make_256x256(path_to_image):
@@ -113,4 +116,37 @@ def put_val_into_synset_folders(path_to_val_folder, path_to_groundtruth, path_to
             os.mkdir(path_to_synset_folder, mode=0o777)
         
         shutil.copy(path_to_val_folder + "/" + filename, path_to_synset_folder + "/" + filename)
-        
+
+def find_average_pixels(path_to_folder, dimensions=(256, 256)):
+    folder_name = path_to_folder.split("/")[-1]
+
+    number_of_images_seen = 0
+    average_image = np.asarray([[[0,0,0]]*dimensions[1]]*dimensions[0], dtype=np.float64)
+
+    subdirs = next(os.walk(path_to_folder))[1]
+    with open('output_average_pixels.txt', 'a') as file:
+            file.write("%s START\n" % time.time())
+    for subdir in subdirs:
+        try:
+            _, _, filenames = next(os.walk(path_to_folder + "/" + subdir), (None, None, []))
+            for filename in filenames:
+                pixels = np.asarray(Image.open(path_to_folder + "/" + subdir + "/" + filename), dtype=np.float64)
+                if isinstance(pixels[0][0], np.uint8):
+                    pixels = cv2.merge((pixels,pixels,pixels))
+                assert pixels.shape == average_image.shape
+                # for r in range(len(pixels)):
+                #     for c in range(len(pixels[r])):
+                #         for i in range(len(pixels[r][c])):  #r, g, b
+                #             average_image[r][c][i] = ((number_of_images_seen*average_image[r][c][i])+pixels[r][c][i])/(number_of_images_seen+1)
+                ave_weight = float(number_of_images_seen)/(number_of_images_seen+1)
+                average_image = cv2.addWeighted(average_image, ave_weight, pixels, 1.0-ave_weight, 0.0)
+                number_of_images_seen += 1
+
+            with open('output_average_pixels.txt', 'a') as file:
+                file.write("%s %s completed\n" % (time.time(), subdir))
+            Image.fromarray(average_image.astype(np.uint8), 'RGB').save('./average_image/%s.JPEG' % number_of_images_seen)
+        except Exception as e:
+            with open('output_average_pixels.txt', 'a') as file:
+                file.write("\t%s\n" % str(e))
+
+
