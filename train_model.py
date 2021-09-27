@@ -119,21 +119,12 @@ def data_loader(data_dir, batch_size=batch_size, workers=workers, pin_memory=Tru
 """
 GET READY FOR ACTUAL TRAINING
 """
-def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=25):
+def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=90, current_epoch=0, best_acc=0, val_acc_history = []):
     since = time.time()
 
-    val_acc_history = []
+    best_model_wts = copy.deepcopy(model.state_dict())
 
-    # Load the best model checkpoint, if you have one
-    if os.path.isfile(os.path.join(MODEL_FOLDER, "best.pt")):
-        checkpoint = torch.load(os.path.join(MODEL_FOLDER, "best.pt"))
-        best_model_wts = checkpoint['model_state_dict']
-        best_acc = checkpoint['acc']
-    else:
-        best_model_wts = copy.deepcopy(model.state_dict())
-        best_acc = 0.0
-
-    for epoch in range(num_epochs):
+    for epoch in range(current_epoch, num_epochs):
         print('Epoch {}/{} - {}'.format(epoch, num_epochs - 1, datetime.datetime.now()))
         print('-' * 10)
 
@@ -191,17 +182,17 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                 if val_loss:
                     running_val_loss += val_loss.item() * inputs.size(0)
 
-                if iterations%10 == 0:
-                    with open('preds.txt', 'w') as file:
-                        file.write(json.dumps(
-                            Counter(
-                                np.asarray(copy.deepcopy(preds).cpu(), dtype=str)
-                            )
-                        ))
-                        file.write("\n\n%s" % running_corrects)
+                # if iterations%10 == 0:
+                #     with open('preds.txt', 'w') as file:
+                #         file.write(json.dumps(
+                #             Counter(
+                #                 np.asarray(copy.deepcopy(preds).cpu(), dtype=str)
+                #             )
+                #         ))
+                #         file.write("\n\n%s" % running_corrects)
 
                 iterations += torch.tensor(1)
-                print("\tIterations: %s" % iterations.item(), end='\r')
+                print("\tIterations: %s; accuracy=%s" % (iterations.item(), float(running_corrects)/(batch_size*iterations)), end='\r')
 
             print()
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
@@ -305,11 +296,26 @@ if __name__ == "__main__":
     """
     # Observe that all parameters are being optimized
     # optimizer = torch.optim.SGD(params_to_update, lr=0.01, momentum=0.9, weight_decay=0.0005)
-    optimizer = torch.optim.Adam(params_to_update, lr=0.01, weight_decay=0.0005)
+    optimizer = torch.optim.Adam(params_to_update, lr=0.0001, weight_decay=0.0005)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.1, patience=2, threshold=0.02, min_lr=0.00001)
 
     # Setup the loss fxn
     criterion = torch.nn.CrossEntropyLoss()
 
+    # Load the best model checkpoint, if you have one
+    if os.path.isfile(os.path.join(MODEL_FOLDER, "2.pt")):
+        checkpoint = torch.load(os.path.join(MODEL_FOLDER, "2.pt"))
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        best_model_wts = checkpoint['model_state_dict']
+        current_epoch = checkpoint['epoch'] + 1
+        best_acc = checkpoint['acc']
+        val_acc_history = checkpoint['val_acc_history']
+    else:
+        current_epoch = 0
+        best_acc = 0.0
+        val_acc_history = []
+
     # Train and evaluate
-    model, hist = train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=num_epochs)
+    model, hist = train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=num_epochs, current_epoch=current_epoch, best_acc=best_acc, val_acc_history=val_acc_history)
