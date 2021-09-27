@@ -29,16 +29,16 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Top level data directory. Here we assume the format of the directory conforms
 #   to the ImageFolder structure
-# data_dir = "D:/256_train_and_val"
-data_dir = "D:/baby_256_train_and_val"
+data_dir = "D:/256_train_and_val"
+# data_dir = "D:/baby_256_train_and_val"
 MODEL_FOLDER = "./models/%s_model" % (data_dir.split("/")[-1])
 
 # images are 224x224
 input_size = 224
 
 # Number of classes in the dataset
-# num_classes = 1000
-num_classes = 2
+num_classes = 1000
+# num_classes = 2
 
 """
 From Alexnet paper:
@@ -191,14 +191,6 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                 if val_loss:
                     running_val_loss += val_loss.item() * inputs.size(0)
 
-                """
-                From Alexnet paper:
-                "The heuristic which we followed was to divide the learning rate by 10 when the validation error
-                rate stopped improving with the current learning rate. The learning rate was initialized at 0.01 and
-                reduced three times prior to termination. "
-                """
-                scheduler.step(running_val_loss)
-
                 if iterations%10 == 0:
                     with open('preds.txt', 'w') as file:
                         file.write(json.dumps(
@@ -209,11 +201,19 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                         file.write("\n\n%s" % running_corrects)
 
                 iterations += torch.tensor(1)
-                print("\tIterations: %s" % iterations, end='\r')
+                print("\tIterations: %s" % iterations.item(), end='\r')
 
             print()
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)
+
+            """
+            From Alexnet paper:
+            "The heuristic which we followed was to divide the learning rate by 10 when the validation error
+            rate stopped improving with the current learning rate. The learning rate was initialized at 0.01 and
+            reduced three times prior to termination. "
+            """
+            scheduler.step(epoch_loss)
 
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
 
@@ -299,14 +299,17 @@ if __name__ == "__main__":
     The heuristic which we followed was to divide the learning rate by 10 when the validation error
     rate stopped improving with the current learning rate. The learning rate was initialized at 0.01 and
     reduced three times prior to termination. "
+
+    TODO: Uh, it appears the SGD optimizer just does not train? Ongoing discussion here https://discuss.pytorch.org/t/image-recognition-alexnet-training-loss-is-not-decreasing/66885/9
+    Using Adam until I figure out what's up with that...
     """
     # Observe that all parameters are being optimized
-    optimizer = torch.optim.SGD(params_to_update, lr=0.01, momentum=0.9, weight_decay=0.0005)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.1)
+    # optimizer = torch.optim.SGD(params_to_update, lr=0.01, momentum=0.9, weight_decay=0.0005)
+    optimizer = torch.optim.Adam(params_to_update, lr=0.01, weight_decay=0.0005)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.1, patience=2, threshold=0.02, min_lr=0.00001)
 
     # Setup the loss fxn
     criterion = torch.nn.CrossEntropyLoss()
 
     # Train and evaluate
     model, hist = train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=num_epochs)
-
