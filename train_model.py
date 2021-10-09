@@ -5,7 +5,6 @@ import os
 import time
 from collections import Counter
 
-import numpy as np
 import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
@@ -47,7 +46,7 @@ with a batch size of 128 examples"
 """
 # Batch size for training (change depending on how much memory you have)
 batch_size = 128
-workers = 7
+workers = 6
 
 """
 From Alexnet paper:
@@ -109,7 +108,7 @@ def data_loader(data_dir, batch_size=batch_size, workers=workers, pin_memory=Tru
     val_loader = torch.utils.data.DataLoader(
         val_ds,
         batch_size=batch_size,
-        shuffle=False,
+        shuffle=True,  # why not shuffle?
         num_workers=workers,
         pin_memory=pin_memory
     )
@@ -120,11 +119,10 @@ def data_loader(data_dir, batch_size=batch_size, workers=workers, pin_memory=Tru
 GET READY FOR ACTUAL TRAINING
 """
 def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=90, current_epoch=0, best_acc=0, val_acc_history = []):
-    since = time.time()
-
     best_model_wts = copy.deepcopy(model.state_dict())
 
     for epoch in range(current_epoch, num_epochs):
+        since = time.time()
         print('Epoch {}/{} - {}'.format(epoch, num_epochs - 1, datetime.datetime.now()))
         print('-' * 10)
 
@@ -219,7 +217,8 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                     'scheduler_state_dict': scheduler.state_dict(),
-                    'acc': epoch_acc
+                    'acc': epoch_acc,
+                    'val_acc_history': val_acc_history
                     }, os.path.join(MODEL_FOLDER, "best.pt"))
             if phase == 'val':
                 val_acc_history.append(epoch_acc)
@@ -230,14 +229,15 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'scheduler_state_dict': scheduler.state_dict(),
-            'acc': epoch_acc
+            'acc': epoch_acc,
+            'val_acc_history': val_acc_history
             }, os.path.join(MODEL_FOLDER, "%s.pt" % epoch))
 
         print()
 
-    time_elapsed = time.time() - since
-    print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
-    print('Best val Acc: {:4f}'.format(best_acc))
+        time_elapsed = time.time() - since
+        print('Epoch complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+        # print('Best val Acc: {:4f}'.format(best_acc))
 
     # load best model weights
     model.load_state_dict(best_model_wts)
@@ -297,17 +297,17 @@ if __name__ == "__main__":
     # Observe that all parameters are being optimized
     # optimizer = torch.optim.SGD(params_to_update, lr=0.01, momentum=0.9, weight_decay=0.0005)
     optimizer = torch.optim.Adam(params_to_update, lr=0.0001, weight_decay=0.0005)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.1, patience=2, threshold=0.02, min_lr=0.00001)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.1, patience=10, threshold=0.01, min_lr=0.00001)
 
     # Setup the loss fxn
     criterion = torch.nn.CrossEntropyLoss()
 
     # Load the best model checkpoint, if you have one
-    if os.path.isfile(os.path.join(MODEL_FOLDER, "2.pt")):
-        checkpoint = torch.load(os.path.join(MODEL_FOLDER, "2.pt"))
+    if os.path.isfile(os.path.join(MODEL_FOLDER, "42.pt")):
+        checkpoint = torch.load(os.path.join(MODEL_FOLDER, "42.pt"))
         model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        # scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
         best_model_wts = checkpoint['model_state_dict']
         current_epoch = checkpoint['epoch'] + 1
         best_acc = checkpoint['acc']

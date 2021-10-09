@@ -177,3 +177,20 @@ def extract_10_patches(inputs):
         torch.flip(inputs[:,:,16:240,16:240], [3])
     ]
 
+"""
+top_k helper function from https://forums.fast.ai/t/return-top-k-accuracy/27658/2
+"""
+def top_k_accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].contiguous().view(-1).float().sum(0, keepdim=True)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res

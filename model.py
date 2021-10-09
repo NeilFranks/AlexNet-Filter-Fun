@@ -30,7 +30,7 @@ def initialize_model(num_classes, feature_extract, use_pretrained=True):
 
 # val_acc_history = []
 
-# for i in range(3):
+# for i in range(5):
 #     model = initialize_model(num_classes, feature_extract, use_pretrained=False)
 #     model = model.to(device)
 #     params_to_update = model.parameters()
