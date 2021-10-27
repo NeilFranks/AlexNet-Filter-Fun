@@ -163,7 +163,7 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                     else:
                         """
                         From Alexnet paper:
-                        "At test time, the network makes a prediction by extracting five 224 × 224 patches 
+                        "At test time, the network makes a prediction by extracting five 224 x 224 patches 
                         (the four corner patches and the center patch) as well as their horizontal reflections 
                         (hence ten patches in all), and averaging the predictions made by the network’s softmax
                         layer on the ten patches."
@@ -278,44 +278,6 @@ if __name__ == "__main__":
     # Send the model to GPU
     model = model.to(device)
 
-    # Gather the parameters to be optimized/updated in this run. If we are
-    #  finetuning we will be updating all parameters. However, if we are
-    #  doing feature extract method, we will only update the parameters
-    #  that we have just initialized, i.e. the parameters with requires_grad
-    #  is True.
-    params_to_update = model.parameters()
-    print("Params to learn:")
-    if feature_extract:
-        params_to_update = []
-        for name, param in model.named_parameters():
-            if param.requires_grad == True:
-                params_to_update.append(param)
-                print("\t", name)
-    else:
-        for name, param in model.named_parameters():
-            if param.requires_grad == True:
-                print("\t", name)
-
-    """
-    From Alexnet paper:
-    "We trained our models using stochastic gradient descent
-    with ... momentum of 0.9, and weight decay of 0.0005"
-    ...
-    "We used an equal learning rate for all layers, which we adjusted manually throughout training.
-    The heuristic which we followed was to divide the learning rate by 10 when the validation error
-    rate stopped improving with the current learning rate. The learning rate was initialized at 0.01 and
-    reduced three times prior to termination. "
-
-    TODO: Uh, it appears the SGD optimizer just does not train? Ongoing discussion here https://discuss.pytorch.org/t/image-recognition-alexnet-training-loss-is-not-decreasing/66885/9
-    Using Adam until I figure out what's up with that...
-    """
-    # Observe that all parameters are being optimized
-    # optimizer = torch.optim.SGD(params_to_update, lr=0.01, momentum=0.9, weight_decay=0.0005)
-    optimizer = torch.optim.Adam(
-        params_to_update, lr=0.0001, weight_decay=0.0005)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.1, patience=10, threshold=0.01, min_lr=0.00001)
-
     # Setup the loss fxn
     criterion = torch.nn.CrossEntropyLoss()
 
@@ -335,9 +297,47 @@ if __name__ == "__main__":
         #     MODEL_FOLDER, "untrained_with_random_filters.pt"))
         checkpoint = torch.load(os.path.join(
             MODEL_FOLDER, "untrained_with_best_filters.pt"))
+        model.load_state_dict(checkpoint['model_state_dict'])
         current_epoch = 0
         best_acc = 0.0
         val_acc_history = []
+
+    # Gather the parameters to be optimized/updated in this run. If we are
+    #  finetuning we will be updating all parameters. However, if we are
+    #  doing feature extract method, we will only update the parameters
+    #  that we have just initialized, i.e. the parameters with requires_grad
+    #  is True.
+    params_to_update = model.parameters()
+    print("Params to learn:")
+    if feature_extract:
+        params_to_update = []
+        for name, param in model.named_parameters():
+            if param.requires_grad == True:
+                params_to_update.append(param)
+                print("\t", name)
+    else:
+        for name, param in model.named_parameters():
+            if param.requires_grad == True:
+                print("\t", name)
+    """
+    From Alexnet paper:
+    "We trained our models using stochastic gradient descent
+    with ... momentum of 0.9, and weight decay of 0.0005"
+    ...
+    "We used an equal learning rate for all layers, which we adjusted manually throughout training.
+    The heuristic which we followed was to divide the learning rate by 10 when the validation error
+    rate stopped improving with the current learning rate. The learning rate was initialized at 0.01 and
+    reduced three times prior to termination. "
+
+    TODO: Uh, it appears the SGD optimizer just does not train? Ongoing discussion here https://discuss.pytorch.org/t/image-recognition-alexnet-training-loss-is-not-decreasing/66885/9
+    Using Adam until I figure out what's up with that...
+    """
+    # Observe that all parameters are being optimized
+    # optimizer = torch.optim.SGD(params_to_update, lr=0.01, momentum=0.9, weight_decay=0.0005)
+    optimizer = torch.optim.Adam(
+        params_to_update, lr=0.0001, weight_decay=0.0005)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.1, patience=10, threshold=0.01, min_lr=0.00001)
 
     # Train and evaluate
     model, hist = train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=num_epochs,

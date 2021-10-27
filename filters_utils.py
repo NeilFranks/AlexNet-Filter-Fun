@@ -56,6 +56,23 @@ def make_gifs_from_layer(path_to_model_dir, start_number, end_number, layer_num,
                        (output_dir, str(filter_idx)), images[filter_idx][-1])
 
 
+def scale_array(array, scale):
+    # should do this one channel at a time, if you want multichannel.
+    # ie, the array you pass in should be from one channel
+    scaled_array = np.array([])
+    for row in array:
+        scaled_row = np.array([])
+        for pixel in row:
+            scaled_row = np.append(scaled_row, [pixel]*scale)
+        for _ in range(scale):
+            if scaled_array.size == 0:
+                scaled_array = scaled_row
+            else:
+                scaled_array = np.vstack([scaled_array, scaled_row])
+
+    return scaled_array
+
+
 """
 FROM https://colab.research.google.com/github/Niranjankumar-c/DeepLearning-PadhAI/blob/master/DeepLearning_Materials/6_VisualizationCNN_Pytorch/CNNVisualisation.ipynb#scrollTo=qv-nJbDFuNuN
 """
