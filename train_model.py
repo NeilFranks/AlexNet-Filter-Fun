@@ -31,6 +31,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 data_dir = "D:/256_train_and_val"
 # data_dir = "D:/baby_256_train_and_val"
 MODEL_FOLDER = "./models/%s_model" % (data_dir.split("/")[-1])
+MODEL_FOLDER = "./models/%s_model_from_bootstrapped_weights" % (
+    data_dir.split("/")[-1])
 
 # images are 224x224
 input_size = 224
@@ -59,9 +61,10 @@ num_epochs = 90
 #   when True we only update the reshaped layer params
 feature_extract = False
 
+
 def train_dataset(data_dir):
     train_dir = os.path.join(data_dir, 'train')
-    
+
     train_transforms = transforms.Compose([
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
@@ -69,33 +72,35 @@ def train_dataset(data_dir):
         intensity_transform.intensity_transform(),
         mean_activity_transform.mean_activity_transform()
     ])
-    
+
     train_dataset = datasets.ImageFolder(
         train_dir,
         train_transforms
     )
-    
+
     return train_dataset
+
 
 def val_dataset(data_dir):
     val_dir = os.path.join(data_dir, 'val')
-    
+
     val_transforms = transforms.Compose([
         transforms.ToTensor(),
         mean_activity_transform.mean_activity_transform()
     ])
-    
+
     val_dataset = datasets.ImageFolder(
         val_dir,
         val_transforms
     )
-    
+
     return val_dataset
+
 
 def data_loader(data_dir, batch_size=batch_size, workers=workers, pin_memory=True):
     train_ds = train_dataset(data_dir)
     val_ds = val_dataset(data_dir)
-    
+
     train_loader = torch.utils.data.DataLoader(
         train_ds,
         batch_size=batch_size,
@@ -104,7 +109,7 @@ def data_loader(data_dir, batch_size=batch_size, workers=workers, pin_memory=Tru
         pin_memory=pin_memory,
         sampler=None
     )
-    
+
     val_loader = torch.utils.data.DataLoader(
         val_ds,
         batch_size=batch_size,
@@ -112,18 +117,22 @@ def data_loader(data_dir, batch_size=batch_size, workers=workers, pin_memory=Tru
         num_workers=workers,
         pin_memory=pin_memory
     )
-    
+
     return train_loader, val_loader
+
 
 """
 GET READY FOR ACTUAL TRAINING
 """
-def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=90, current_epoch=0, best_acc=0, val_acc_history = []):
+
+
+def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=90, current_epoch=0, best_acc=0, val_acc_history=[]):
     best_model_wts = copy.deepcopy(model.state_dict())
 
     for epoch in range(current_epoch, num_epochs):
         since = time.time()
-        print('Epoch {}/{} - {}'.format(epoch, num_epochs - 1, datetime.datetime.now()))
+        print('Epoch {}/{} - {}'.format(epoch,
+              num_epochs - 1, datetime.datetime.now()))
         print('-' * 10)
 
         # Each epoch has a training and validation phase
@@ -160,7 +169,8 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                         layer on the ten patches."
                         """
                         patches = utils.extract_10_patches(inputs)
-                        patch_outputs = torch.stack([model(patch) for patch in patches])
+                        patch_outputs = torch.stack(
+                            [model(patch) for patch in patches])
                         outputs = torch.mean(patch_outputs, axis=0)
                     loss = criterion(outputs, labels.long())
 
@@ -190,11 +200,13 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                 #         file.write("\n\n%s" % running_corrects)
 
                 iterations += torch.tensor(1)
-                print("\tIterations: %s; accuracy=%s" % (iterations.item(), float(running_corrects)/(batch_size*iterations)), end='\r')
+                print("\tIterations: %s; accuracy=%s" % (iterations.item(), (float(
+                    running_corrects)/(batch_size*iterations)).item()), end='\r')
 
             print()
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
-            epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)
+            epoch_acc = running_corrects.double(
+            ) / len(dataloaders[phase].dataset)
 
             """
             From Alexnet paper:
@@ -204,7 +216,8 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
             """
             scheduler.step(epoch_loss)
 
-            print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+            print('{} Loss: {:.4f} Acc: {:.4f}'.format(
+                phase, epoch_loss, epoch_acc))
 
             # deep copy the model
             if phase == 'val' and epoch_acc > best_acc:
@@ -219,7 +232,7 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                     'scheduler_state_dict': scheduler.state_dict(),
                     'acc': epoch_acc,
                     'val_acc_history': val_acc_history
-                    }, os.path.join(MODEL_FOLDER, "best.pt"))
+                }, os.path.join(MODEL_FOLDER, "best.pt"))
             if phase == 'val':
                 val_acc_history.append(epoch_acc)
 
@@ -231,17 +244,19 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
             'scheduler_state_dict': scheduler.state_dict(),
             'acc': epoch_acc,
             'val_acc_history': val_acc_history
-            }, os.path.join(MODEL_FOLDER, "%s.pt" % epoch))
+        }, os.path.join(MODEL_FOLDER, "%s.pt" % epoch))
 
         print()
 
         time_elapsed = time.time() - since
-        print('Epoch complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+        print('Epoch complete in {:.0f}m {:.0f}s'.format(
+            time_elapsed // 60, time_elapsed % 60))
         # print('Best val Acc: {:4f}'.format(best_acc))
 
     # load best model weights
     model.load_state_dict(best_model_wts)
     return model, val_acc_history
+
 
 """
 MAKE THE MODEL
@@ -255,7 +270,8 @@ if __name__ == "__main__":
     }
 
     # Initialize the model for this run
-    model = initialize_model(num_classes, feature_extract, use_pretrained=False)
+    model = initialize_model(
+        num_classes, feature_extract, use_pretrained=False)
 
     # print(model)
 
@@ -271,15 +287,14 @@ if __name__ == "__main__":
     print("Params to learn:")
     if feature_extract:
         params_to_update = []
-        for name,param in model.named_parameters():
+        for name, param in model.named_parameters():
             if param.requires_grad == True:
                 params_to_update.append(param)
-                print("\t",name)
+                print("\t", name)
     else:
-        for name,param in model.named_parameters():
+        for name, param in model.named_parameters():
             if param.requires_grad == True:
-                print("\t",name)
-
+                print("\t", name)
 
     """
     From Alexnet paper:
@@ -296,14 +311,17 @@ if __name__ == "__main__":
     """
     # Observe that all parameters are being optimized
     # optimizer = torch.optim.SGD(params_to_update, lr=0.01, momentum=0.9, weight_decay=0.0005)
-    optimizer = torch.optim.Adam(params_to_update, lr=0.0001, weight_decay=0.0005)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.1, patience=10, threshold=0.01, min_lr=0.00001)
+    optimizer = torch.optim.Adam(
+        params_to_update, lr=0.0001, weight_decay=0.0005)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.1, patience=10, threshold=0.01, min_lr=0.00001)
 
     # Setup the loss fxn
     criterion = torch.nn.CrossEntropyLoss()
 
     # Load the best model checkpoint, if you have one
-    if os.path.isfile(os.path.join(MODEL_FOLDER, "42.pt")):
+    # if os.path.isfile(os.path.join(MODEL_FOLDER, "42.pt")):
+    if False:
         checkpoint = torch.load(os.path.join(MODEL_FOLDER, "42.pt"))
         model.load_state_dict(checkpoint['model_state_dict'])
         # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -313,9 +331,14 @@ if __name__ == "__main__":
         best_acc = checkpoint['acc']
         val_acc_history = checkpoint['val_acc_history']
     else:
+        checkpoint = torch.load(os.path.join(
+            MODEL_FOLDER, "untrained_with_random_filters.pt"))
+        # checkpoint = torch.load(os.path.join(
+        #     MODEL_FOLDER, "untrained_with_best_filters.pt"))
         current_epoch = 0
         best_acc = 0.0
         val_acc_history = []
 
     # Train and evaluate
-    model, hist = train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=num_epochs, current_epoch=current_epoch, best_acc=best_acc, val_acc_history=val_acc_history)
+    model, hist = train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=num_epochs,
+                              current_epoch=current_epoch, best_acc=best_acc, val_acc_history=val_acc_history)

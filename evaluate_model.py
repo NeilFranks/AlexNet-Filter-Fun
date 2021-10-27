@@ -44,24 +44,26 @@ workers = 6
 #   when True we only update the reshaped layer params
 feature_extract = False
 
+
 def val_dataset(data_dir):
     val_dir = os.path.join(data_dir, 'val')
-    
+
     val_transforms = transforms.Compose([
         transforms.ToTensor(),
         mean_activity_transform.mean_activity_transform()
     ])
-    
+
     val_dataset = datasets.ImageFolder(
         val_dir,
         val_transforms
     )
-    
+
     return val_dataset
+
 
 def data_loader(data_dir, batch_size=batch_size, workers=workers, pin_memory=True):
     val_ds = val_dataset(data_dir)
-    
+
     val_loader = torch.utils.data.DataLoader(
         val_ds,
         batch_size=batch_size,
@@ -69,12 +71,15 @@ def data_loader(data_dir, batch_size=batch_size, workers=workers, pin_memory=Tru
         num_workers=workers,
         pin_memory=pin_memory
     )
-    
+
     return val_loader
+
 
 """
 GET READY FOR ACTUAL TRAINING
 """
+
+
 def train_model(model, dataloader):
     since = time.time()
 
@@ -107,13 +112,15 @@ def train_model(model, dataloader):
         # statistics
         seen_so_far += len(labels)
 
-        utils.top_k_accuracy(outputs, labels, (5,))
+        # utils.top_k_accuracy(outputs, labels, (5,))
 
-        top_1_acc, top_5_acc = utils.top_k_accuracy(outputs, labels, (1,5))
+        top_1_acc, top_5_acc = utils.top_k_accuracy(outputs, labels, (1, 5))
 
         # weighted average
-        running_top_1_acc = (((seen_so_far-len(labels))*running_top_1_acc) + (len(labels)*top_1_acc))/seen_so_far
-        running_top_5_acc = (((seen_so_far-len(labels))*running_top_5_acc) + (len(labels)*top_5_acc))/seen_so_far
+        running_top_1_acc = (
+            ((seen_so_far-len(labels))*running_top_1_acc) + (len(labels)*top_1_acc))/seen_so_far
+        running_top_5_acc = (
+            ((seen_so_far-len(labels))*running_top_5_acc) + (len(labels)*top_5_acc))/seen_so_far
 
         iterations += torch.tensor(1)
         print("\tIterations: %s" % iterations.item())
@@ -123,26 +130,28 @@ def train_model(model, dataloader):
     print()
 
     time_elapsed = time.time() - since
-    print('Evaluation complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+    print('Evaluation complete in {:.0f}m {:.0f}s'.format(
+        time_elapsed // 60, time_elapsed % 60))
 
     return model, running_top_1_acc, running_top_5_acc
 
-"""
-MAKE THE MODEL
-"""
+
 if __name__ == "__main__":
     print("Initializing Dataset and Dataloader...")
     val_loader = data_loader(data_dir)
     dataloader = val_loader
 
     # Initialize the model for this run
-    model = initialize_model(num_classes, feature_extract, use_pretrained=False)
+    model = initialize_model(
+        num_classes, feature_extract, use_pretrained=False)
 
     # Send the model to GPU
     model = model.to(device)
 
     # Load the best model checkpoint
-    checkpoint = torch.load(os.path.join(MODEL_FOLDER, "best.pt"))
+    # checkpoint = torch.load(os.path.join(MODEL_FOLDER, "best.pt"))
+    checkpoint = torch.load(os.path.join(
+        MODEL_FOLDER, "untrained_with_random_filters.pt"))
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # Train and evaluate
