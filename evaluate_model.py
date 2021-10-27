@@ -21,7 +21,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 #   to the ImageFolder structure
 data_dir = "D:/256_train_and_val"
 # data_dir = "D:/baby_256_train_and_val"
-MODEL_FOLDER = "./models/%s_model" % (data_dir.split("/")[-1])
+# MODEL_FOLDER = "./models/%s_model" % (data_dir.split("/")[-1])
+MODEL_FOLDER = "./models/256_train_and_val_model"
 
 # images are 224x224
 input_size = 224

@@ -1,20 +1,44 @@
 import torch
 import torchvision.models as models
 
+
 def set_parameter_requires_grad(model, feature_extracting):
     if feature_extracting:
         for param in model.parameters():
             param.requires_grad = False
 
+
+def quick_initialize(path_to_model):
+    # images are 224x224
+    input_size = 224
+
+    # Number of classes in the dataset
+    num_classes = 1000
+
+    # Flag for feature extracting. When False, we finetune the whole model,
+    #   when True we only update the reshaped layer params
+    feature_extract = False
+
+    # Initialize the model for this run
+    model = initialize_model(
+        num_classes, feature_extract, use_pretrained=False)
+
+    # Load the best model checkpoint
+    checkpoint = torch.load(path_to_model)
+    model.load_state_dict(checkpoint['model_state_dict'])
+
+    return model
+
+
 def initialize_model(num_classes, feature_extract, use_pretrained=True):
     # Initialize these variables which will be set in this if statement. Each of these
     #   variables is model specific.
     model = None
-    
+
     model = models.alexnet(pretrained=use_pretrained)
     set_parameter_requires_grad(model, feature_extract)
     numrs = model.classifier[6].in_features
-    model.classifier[6] = torch.nn.Linear(numrs,num_classes)
+    model.classifier[6] = torch.nn.Linear(numrs, num_classes)
 
     return model
 
