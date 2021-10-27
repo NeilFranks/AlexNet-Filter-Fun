@@ -331,10 +331,10 @@ if __name__ == "__main__":
         best_acc = checkpoint['acc']
         val_acc_history = checkpoint['val_acc_history']
     else:
-        checkpoint = torch.load(os.path.join(
-            MODEL_FOLDER, "untrained_with_random_filters.pt"))
         # checkpoint = torch.load(os.path.join(
-        #     MODEL_FOLDER, "untrained_with_best_filters.pt"))
+        #     MODEL_FOLDER, "untrained_with_random_filters.pt"))
+        checkpoint = torch.load(os.path.join(
+            MODEL_FOLDER, "untrained_with_best_filters.pt"))
         current_epoch = 0
         best_acc = 0.0
         val_acc_history = []
