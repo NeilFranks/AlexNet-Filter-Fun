@@ -31,7 +31,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 data_dir = "D:/256_train_and_val"
 # data_dir = "D:/baby_256_train_and_val"
 MODEL_FOLDER = "./models/%s_model" % (data_dir.split("/")[-1])
-MODEL_FOLDER = "./models/%s_model_from_bootstrapped_weights" % (
+BOOT_MODEL_FOLDER = "./models/%s_model_from_bootstrapped_weights" % (
     data_dir.split("/")[-1])
 
 # images are 224x224
@@ -283,8 +283,10 @@ if __name__ == "__main__":
 
     # Load the best model checkpoint, if you have one
     # if os.path.isfile(os.path.join(MODEL_FOLDER, "42.pt")):
-    if False:
-        checkpoint = torch.load(os.path.join(MODEL_FOLDER, "42.pt"))
+    if os.path.isfile(os.path.join(BOOT_MODEL_FOLDER, "0.pt")):
+        # if False:
+        # checkpoint = torch.load(os.path.join(MODEL_FOLDER, "42.pt"))
+        checkpoint = torch.load(os.path.join(BOOT_MODEL_FOLDER, "0.pt"))
         model.load_state_dict(checkpoint['model_state_dict'])
         # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         # scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
@@ -296,7 +298,7 @@ if __name__ == "__main__":
         # checkpoint = torch.load(os.path.join(
         #     MODEL_FOLDER, "untrained_with_random_filters.pt"))
         checkpoint = torch.load(os.path.join(
-            MODEL_FOLDER, "untrained_with_best_filters.pt"))
+            BOOT_MODEL_FOLDER, "untrained_with_best_filters.pt"))
         model.load_state_dict(checkpoint['model_state_dict'])
         current_epoch = 0
         best_acc = 0.0
