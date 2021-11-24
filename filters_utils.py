@@ -20,10 +20,9 @@ def make_gifs_from_layer(path_to_model_dir, start_number, end_number, layer_num,
     for model_idx in range(start_number, end_number+1):
         print("Getting images from model %s/%s" %
               (model_idx, end_number), end='\r')
+        model = quick_initialize(os.path.join(
+            MODEL_FOLDER, "%s.pt" % model_idx))
         for filter_idx in range(weight_tensor.shape[0]):
-
-            model = quick_initialize(os.path.join(
-                MODEL_FOLDER, "%s.pt" % model_idx))
             weight_tensor = model.features[layer_num].weight.data
 
             # looping through all the kernels in each channel
@@ -54,6 +53,26 @@ def make_gifs_from_layer(path_to_model_dir, start_number, end_number, layer_num,
                        (output_dir, str(filter_idx)), images[filter_idx][len(images.keys())//2])
         imageio.imsave("%s/%s_end.png" %
                        (output_dir, str(filter_idx)), images[filter_idx][-1])
+
+
+def get_filters_from_layer(start_number, end_number, layer_num):
+    filters = {}
+    model = quick_initialize(os.path.join(
+        MODEL_FOLDER, "%s.pt" % start_number))
+    weight_tensor = model.features[layer_num].weight.data
+
+    for model_idx in range(start_number, end_number+1):
+        print("Getting filters from model %s/%s" %
+              (model_idx, end_number), end='\r')
+        model = quick_initialize(os.path.join(
+            MODEL_FOLDER, "%s.pt" % model_idx))
+
+        for filter_idx in range(weight_tensor.shape[0]):
+            if filter_idx not in filters.keys():
+                filters[filter_idx] = []
+            filters[filter_idx].append(model.features[layer_num].weight.data)
+
+    return filters
 
 
 def scale_array(array, scale):

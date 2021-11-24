@@ -149,9 +149,9 @@ if __name__ == "__main__":
     model = model.to(device)
 
     # Load the best model checkpoint
-    # checkpoint = torch.load(os.path.join(MODEL_FOLDER, "best.pt"))
-    checkpoint = torch.load(os.path.join(
-        MODEL_FOLDER, "untrained_with_random_filters.pt"))
+    checkpoint = torch.load(os.path.join(MODEL_FOLDER, "best.pt"))
+    # checkpoint = torch.load(os.path.join(
+    #     MODEL_FOLDER, "untrained_with_random_filters.pt"))
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # Train and evaluate

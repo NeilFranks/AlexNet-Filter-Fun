@@ -32,4 +32,4 @@ def compare_accuracy_to_bootstrapped_accuracy(path_to_real_model_dir, real_start
 
 
 compare_accuracy_to_bootstrapped_accuracy(
-    MODEL_FOLDER, 0, 42, BOOT_MODEL_FOLDER, 0, 1),
+    MODEL_FOLDER, 0, 46, BOOT_MODEL_FOLDER, 0, 3),

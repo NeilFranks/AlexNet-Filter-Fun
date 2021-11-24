@@ -21,7 +21,17 @@ def make_images_bigger(scale=10):
     GIF_DIR = "./gifs/models/256_train_and_val_model/0"
     for (_, _, filenames) in os.walk(GIF_DIR):
         for f in filenames:
-            if f[-4:] == ".gif":
+            if f[-4:] == ".png":
+                frame = imageio.imread(os.path.join(GIF_DIR, f))
+                frame = frame.transpose(2, 0, 1)
+                bigger_frame = np.array([
+                    filters_utils.scale_array(frame[0], scale),
+                    filters_utils.scale_array(frame[1], scale),
+                    filters_utils.scale_array(frame[2], scale)
+                ]).transpose(1, 2, 0)
+                imageio.imsave(os.path.join(GIF_DIR, "%sx%s.png" %
+                                            (f[:-4], scale)), bigger_frame)
+            elif f[-4:] == ".gif":
                 gif = imageio.get_reader(os.path.join(GIF_DIR, f))
                 bigger_frames = []
                 for frame in gif:
@@ -36,6 +46,10 @@ def make_images_bigger(scale=10):
 
                 imageio.mimsave(os.path.join(GIF_DIR, "%sx%s.gif" %
                                 (f[:-4], scale)), bigger_frames)
+
+
+def make_collages():
+    GIF_DIR = "./gifs/models/256_train_and_val_model/0"
 
 
 def plot_trajectory_of_pixel_in_filter_in_layer0(path_to_gif_dir, filter_idx, pixel_row, pixel_col):
@@ -114,9 +128,9 @@ def make_and_save_untrained_model_with_random_filters():
 
 
 # gif_from_all_filters_in_layer0()
-# plot_trajectory_of_pixel_in_filter_in_layer0(
-#     ".\\gifs\\models\\256_train_and_val_model", 1, 10, 0)
+plot_trajectory_of_pixel_in_filter_in_layer0(
+    ".\\gifs\\models\\256_train_and_val_model", 1, 0, 10)
 # extract_weights_from_best_model()
 # make_and_save_untrained_model_with_best_filters()
 # make_and_save_untrained_model_with_random_filters()
-make_images_bigger()
+# make_images_bigger()
