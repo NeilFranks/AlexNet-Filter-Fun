@@ -1,4 +1,5 @@
 average_image
 /models/
+/filter_models/
 /__pycache__/
 /gifs/
