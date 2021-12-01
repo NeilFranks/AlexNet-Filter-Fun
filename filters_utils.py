@@ -59,18 +59,19 @@ def get_filters_from_layer(start_number, end_number, layer_num):
     filters = {}
     model = quick_initialize(os.path.join(
         MODEL_FOLDER, "%s.pt" % start_number))
-    weight_tensor = model.features[layer_num].weight.data
 
-    for model_idx in range(start_number, end_number+1):
+    for model_idx in range(start_number, end_number):
         print("Getting filters from model %s/%s" %
-              (model_idx, end_number), end='\r')
+              (model_idx, end_number-1), end='\r')
         model = quick_initialize(os.path.join(
             MODEL_FOLDER, "%s.pt" % model_idx))
+
+        weight_tensor = model.features[layer_num].weight.data
 
         for filter_idx in range(weight_tensor.shape[0]):
             if filter_idx not in filters.keys():
                 filters[filter_idx] = []
-            filters[filter_idx].append(model.features[layer_num].weight.data)
+            filters[filter_idx].append(weight_tensor[filter_idx])
 
     return filters
 
