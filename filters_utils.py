@@ -1,4 +1,5 @@
 import os
+import torch
 from torch import nn
 import matplotlib.pyplot as plt
 import numpy as np
@@ -93,6 +94,21 @@ def scale_array(array, scale):
     return scaled_array
 
 
+def plot_filter_multichannels(filter):
+
+    filter = torch.squeeze(filter)
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot()
+    # we convert the tensor to numpy
+    npimg = np.array(filter.detach().numpy().reshape(11, 11, 3), np.float32)
+    # standardize the numpy image
+    npimg = (npimg - np.mean(npimg)) / np.std(npimg)
+    npimg = np.minimum(1, np.maximum(0, (npimg + 0.5)))
+    ax1.imshow(npimg)
+    plt.show()
+
+
 """
 FROM https://colab.research.google.com/github/Niranjankumar-c/DeepLearning-PadhAI/blob/master/DeepLearning_Materials/6_VisualizationCNN_Pytorch/CNNVisualisation.ipynb#scrollTo=qv-nJbDFuNuN
 """
@@ -133,7 +149,7 @@ FROM https://colab.research.google.com/github/Niranjankumar-c/DeepLearning-PadhA
 
 def plot_filters_multi_channel(t):
 
-    # get the number of kernals
+    # get the number of kernels
     num_kernels = t.shape[0]
 
     # define number of columns for subplots
