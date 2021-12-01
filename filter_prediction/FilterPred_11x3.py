@@ -6,7 +6,7 @@ class FilterPred_11x3(nn.Module):
     """
     Model to predict the convergence of filters with 3 channels, size 11x11
 
-    Given 3 sequential frames, predict the 4th frame
+    Given 3 sequential frames, predict the frame it will be in 30 epochs
     """
 
     def __init__(self) -> None:
@@ -27,7 +27,6 @@ class FilterPred_11x3(nn.Module):
             nn.Conv3d(384, 256, kernel_size=3, padding=1),
             nn.BatchNorm3d(256),
             nn.LeakyReLU(0.2, inplace=True),
-            # nn.Conv3d(256, self.stretched_length_of_one_frame, kernel_size=3),
             nn.Conv3d(256, 1, kernel_size=3)
         )
 
