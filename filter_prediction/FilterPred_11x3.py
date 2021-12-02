@@ -12,7 +12,6 @@ class FilterPred_11x3(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.number_of_sequential_frames_as_input = 3
-        self.stretched_length_of_one_frame = 3*11*11
 
         self.main = nn.Sequential(
             nn.Conv3d(self.number_of_sequential_frames_as_input,

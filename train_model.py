@@ -13,6 +13,7 @@ import intensity_transform
 import mean_activity_transform
 import utils
 from model import initialize_model
+from filters_utils import MODEL_FOLDER, get_filters_from_layer, plot_filter_multichannels
 
 
 """
@@ -30,8 +31,10 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 #   to the ImageFolder structure
 data_dir = "D:/256_train_and_val"
 # data_dir = "D:/baby_256_train_and_val"
-# MODEL_FOLDER = "./models/%s_model" % (data_dir.split("/")[-1])
-MODEL_FOLDER = "./models/%s_model_from_bootstrapped_weights" % (
+MODEL_FOLDER = "./models/%s_model" % (data_dir.split("/")[-1])
+BOOT_MODEL_FOLDER = "./models/%s_model_from_bootstrapped_weights" % (
+    data_dir.split("/")[-1])
+FUTURE_MODEL_FOLDER = "./models/%s_model_from_future_filters" % (
     data_dir.split("/")[-1])
 
 # images are 224x224
@@ -232,7 +235,7 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                     'scheduler_state_dict': scheduler.state_dict(),
                     'acc': epoch_acc,
                     'val_acc_history': val_acc_history
-                }, os.path.join(MODEL_FOLDER, "best.pt"))
+                }, os.path.join(FUTURE_MODEL_FOLDER, "best.pt"))
             if phase == 'val':
                 val_acc_history.append(epoch_acc)
 
@@ -244,7 +247,7 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
             'scheduler_state_dict': scheduler.state_dict(),
             'acc': epoch_acc,
             'val_acc_history': val_acc_history
-        }, os.path.join(MODEL_FOLDER, "%s.pt" % epoch))
+        }, os.path.join(FUTURE_MODEL_FOLDER, "%s.pt" % epoch))
 
         print()
 
@@ -282,11 +285,11 @@ if __name__ == "__main__":
     criterion = torch.nn.CrossEntropyLoss()
 
     # Load the best model checkpoint, if you have one
-    # if os.path.isfile(os.path.join(MODEL_FOLDER, "42.pt")):
-    if os.path.isfile(os.path.join(MODEL_FOLDER, "0.pt")):
+    if os.path.isfile(os.path.join(MODEL_FOLDER, "42.pt")):
+        # if os.path.isfile(os.path.join(MODEL_FOLDER, "0.pt")):
         # if False:
-        # checkpoint = torch.load(os.path.join(MODEL_FOLDER, "42.pt"))
-        checkpoint = torch.load(os.path.join(MODEL_FOLDER, "0.pt"))
+        checkpoint = torch.load(os.path.join(MODEL_FOLDER, "42.pt"))
+        # checkpoint = torch.load(os.path.join(MODEL_FOLDER, "0.pt"))
         model.load_state_dict(checkpoint['model_state_dict'])
         # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         # scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
@@ -303,6 +306,16 @@ if __name__ == "__main__":
         current_epoch = 0
         best_acc = 0.0
         val_acc_history = []
+
+    print("val_acc_history = %s" % [t.item() for t in val_acc_history])
+
+    # LOAD UP YOUR PREDICTED FILTERS
+    filters = list(torch.load('filters_11x3_1_leaps').values())
+    layer0 = list(model.named_parameters())[0]
+    assert layer0[0] == 'features.0.weight'
+    for i in range(len(layer0[1])):
+        layer0[1].data[i] = torch.squeeze(torch.stack(filters[i]))
+    layer0[1].requires_grad = False
 
     # Gather the parameters to be optimized/updated in this run. If we are
     #  finetuning we will be updating all parameters. However, if we are

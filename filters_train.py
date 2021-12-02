@@ -63,10 +63,10 @@ while loss > 0.0:
         groundtruth_outputs.append(torch.stack(
             [groundtruth_outputs_filters[filter_num]]))
     inputs = torch.stack(tuple(inputs))
-    inputs.to(device, dtype=torch.float)
+    inputs = inputs.to(device, dtype=torch.float)
 
     groundtruth_outputs = torch.stack(tuple(groundtruth_outputs))
-    groundtruth_outputs.to(device, dtype=torch.float)
+    groundtruth_outputs = groundtruth_outputs.to(device, dtype=torch.float)
 
     optimizer.zero_grad()
 
